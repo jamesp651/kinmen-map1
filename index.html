@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>金門迎城隍繞境即時地圖</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; font-family: "Microsoft JhengHei", sans-serif; }
+        #map { height: 100vh; width: 100%; }
+        
+        .ui-panel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        
+        button {
+            background: #d32f2f;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        button:hover { background: #b71c1c; }
+        
+        .legend {
+            background: white;
+            padding: 10px;
+            line-height: 18px;
+            color: #555;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+<div class="ui-panel">
+    <h3>浯島城隍廟繞境地圖</h3>
+    <p>農曆四月十二 慶典專用</p>
+    <button onclick="locateUser()">📍 我的即時位置</button>
+</div>
+
+<div id="map"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    // 1. 初始化地圖（以金城鎮 浯島城隍廟 為中心）
+    const map = L.map('map').setView([24.4357, 118.3168], 16);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // 2. 定義繞境關鍵點
+    const locations = [
+        { name: "浯島城隍廟 (起點/終點)", coords: [24.4357, 118.3168], icon: "🔴" },
+        { name: "網寮 (東門)", coords: [24.4350, 118.3200], icon: "🔵" },
+        { name: "禹帝廟 (南門)", coords: [24.4315, 118.3160], icon: "🔵" },
+        { name: "天后宮 (西門)", coords: [24.4355, 118.3125], icon: "🔵" },
+        { name: "北門廟", coords: [24.4385, 118.3175], icon: "🔵" }
+    ];
+
+    // 放置標記
+    locations.forEach(loc => {
+        L.marker(loc.coords).addTo(map)
+            .bindPopup(`<b>${loc.icon} ${loc.name}</b>`);
+    });
+
+    // 3. 模擬繞境路線 (簡化版示意線條)
+    const routeCoords = [
+        [24.4357, 118.3168], // 城隍廟
+        [24.4350, 118.3200], // 東門
+        [24.4315, 118.3160], // 南門
+        [24.4355, 118.3125], // 西門
+        [24.4385, 118.3175], // 北門
+        [24.4357, 118.3168]  // 回城隍廟
+    ];
+    L.polyline(routeCoords, {color: 'red', weight: 5, opacity: 0.7}).addTo(map);
+
+    // 4. 即時定位功能
+    let userMarker, userCircle;
+
+    function locateUser() {
+        if (!navigator.geolocation) {
+            alert("您的瀏覽器不支援定位功能");
+            return;
+        }
+
+        // 持續追蹤位置
+        navigator.geolocation.watchPosition(success, error, {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0
+        });
+    }
+
+    function success(pos) {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const accuracy = pos.coords.accuracy;
+
+        if (userMarker) {
+            userMarker.setLatLng([lat, lng]);
+            userCircle.setLatLng([lat, lng]).setRadius(accuracy);
+        } else {
+            userMarker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    html: '🚶',
+                    className: 'user-icon',
+                    iconSize: [30, 30]
+                })
+            }).addTo(map).bindPopup("你在這裡").openPopup();
+            
+            userCircle = L.circle([lat, lng], {radius: accuracy, color: '#1E88E5'}).addTo(map);
+        }
+        
+        map.setView([lat, lng], 17); // 移動地圖到使用者位置
+    }
+
+    function error() {
+        alert("無法獲取位置，請確認 GPS 是否開啟並允許定位權限。");
+    }
+
+</script>
+
+</body>
+</html>
